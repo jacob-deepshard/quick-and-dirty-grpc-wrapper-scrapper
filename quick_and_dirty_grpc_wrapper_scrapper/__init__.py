@@ -4,31 +4,37 @@ import grpc
 from concurrent import futures
 import sys
 import os
-import types
 from google.protobuf import descriptor_pool, descriptor_pb2, message_factory
 from google.protobuf.descriptor import FieldDescriptor
-from google.protobuf import reflection
 
-def extract_all_top_level_functions(module):
+# Define the `fn` decorator
+def fn(func):
+    func.__is_exposed__ = True
+    return func
+
+def extract_decorated_functions(module):
     """
-    Extracts all top-level functions from a given module.
+    Extracts all functions from a given module that are decorated with `@fn`.
     Returns a dictionary of function names to function objects.
     """
     functions = {}
     for name, obj in inspect.getmembers(module, inspect.isfunction):
-        # Ensure the function is defined in the module (not imported)
-        if obj.__module__ == module.__name__:
+        if getattr(obj, '__is_exposed__', False):
             functions[name] = obj
     return functions
 
 def create_grpc_server(module, port=50051):
     """
-    Creates and starts a gRPC server exposing the functions from the module.
+    Creates and starts a gRPC server exposing the functions from the module that are decorated with `@fn`.
     """
-    functions = extract_all_top_level_functions(module)
+    functions = extract_decorated_functions(module)
+
+    if not functions:
+        print("No functions decorated with @fn found in the module.")
+        return
 
     # Dynamically create protobuf definitions
-    pool = descriptor_pool.Default()
+    pool = descriptor_pool.DescriptorPool()
     factory = message_factory.MessageFactory(pool)
 
     # Create a FileDescriptorProto
@@ -44,7 +50,7 @@ def create_grpc_server(module, port=50051):
     message_types = {}
 
     for func_name, func in functions.items():
-        # Assuming all functions take a dictionary as input and return a dictionary
+        # Assuming all functions take a string as input and return a string
         # Create input and output message types
         input_type_name = f'{func_name}Input'
         output_type_name = f'{func_name}Output'
@@ -126,7 +132,7 @@ def create_grpc_server(module, port=50051):
 
 def start_grpc_server_from_python_script(script_path, port=50051):
     """
-    Loads a Python script as a module and starts a gRPC server to expose its functions.
+    Loads a Python script as a module and starts a gRPC server to expose its functions decorated with `@fn`.
     """
     module_name = os.path.splitext(os.path.basename(script_path))[0]
     spec = importlib.util.spec_from_file_location(module_name, script_path)
