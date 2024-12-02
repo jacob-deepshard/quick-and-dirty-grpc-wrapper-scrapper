@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "quick-and-dirty-grpc-wrapper-scrapper"
+version = "0.1.0"
+description = ""
+authors = ["Jacob Valdez <jacobfv123@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+grpcio = "^1.68.1"
+grpcio-tools = "^1.68.1"
+protobuf = "^5.29.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
